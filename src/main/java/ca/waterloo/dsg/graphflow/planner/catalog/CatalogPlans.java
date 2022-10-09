@@ -14,6 +14,7 @@ import ca.waterloo.dsg.graphflow.storage.KeyStore;
 import ca.waterloo.dsg.graphflow.util.collection.SetUtils;
 import ca.waterloo.dsg.graphflow.util.container.Triple;
 import lombok.Getter;
+import org.apache.logging.log4j.LogManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +54,7 @@ public class CatalogPlans {
     private boolean isAdjListSortedByType;
 
     private static final String[] QUERY_VERTICES = { "a", "b", "c", "d", "e", "f", "g" };
+
     private static Map<String, Integer> QUERY_VERTEX_TO_IDX_MAP;
     @Getter List<ScanSampling> scans;
     private boolean isDirected;
@@ -90,6 +92,8 @@ public class CatalogPlans {
 
     public void setNextOperators(Graph graph, Operator operator,
         QueryGraphSet queryGraphsToExtend) {
+        var logger = LogManager.getLogger(CatalogPlans.class);
+        // in subgraph of the next operator
         var inSubgraph = operator.getOutSubgraph();
         if (null != queryGraphsToExtend && !queryGraphsToExtend.contains(inSubgraph)) {
             queryGraphsToExtend.add(inSubgraph);
@@ -99,6 +103,7 @@ public class CatalogPlans {
 
         var queryVertices = new ArrayList<String>(inSubgraph.getQVertices());
         var descriptors = new ArrayList<Descriptor>();
+        // generate query vertices to extend
         for (var queryVerticesToExtend : SetUtils.getPowerSetExcludingEmptySet(queryVertices)) {
             for (var ALDs : generateALDs(queryVerticesToExtend, isDirected)) {
                 descriptors.add(new Descriptor(getOutSubgraph(inSubgraph.copy(), ALDs), ALDs));
@@ -107,6 +112,7 @@ public class CatalogPlans {
         var toQVertex = QUERY_VERTICES[inSubgraph.getNumVertices()];
         IntersectCatalog[] next;
         if (isAdjListSortedByType) {
+            logger.info("Sorted by type");
             var nextList = new ArrayList<IntersectCatalog>();
             for (var descriptor : descriptors) {
                 var types = new ArrayList<Short>();
@@ -141,6 +147,7 @@ public class CatalogPlans {
             }
             next = nextList.toArray(new IntersectCatalog[0]);
         } else {
+            logger.info("Not sorted by type");
             next = new IntersectCatalog[descriptors.size()];
             for (var i = 0; i < descriptors.size(); i++) {
                 var descriptor = descriptors.get(i);
@@ -177,6 +184,7 @@ public class CatalogPlans {
         var numVertices = graph.getHighestVertexId() + 1;
         var keyToEdgesMap = new HashMap<Long/*edge key*/, int[]/*edges*/ >();
         var keyToCurrIdx = new HashMap<Long/*edge key*/, Integer>();
+        // 三层for loop建立edge key到num edges的初步映射（只设定了edge key对应的edges数量）
         for (short fromType = 0; fromType < numTypes; fromType++) {
             for (short label = 0; label < numLabels; label++) {
                 for (short toType = 0; toType < numTypes; toType++) {
@@ -190,6 +198,7 @@ public class CatalogPlans {
                 }
             }
         }
+        // 向key to edges map中填充具体的adjacency数据
         for (var fromVertex = 0; fromVertex < numVertices; fromVertex++) {
             var fromType = vertexTypes[fromVertex];
             var offsets = fwdAdjLists[fromVertex].getLabelOrTypeOffsets();
@@ -212,6 +221,7 @@ public class CatalogPlans {
                 }
             }
         }
+        //
         var scans = new ArrayList<ScanSampling>();
         for (short fromType = 0; fromType < numTypes; fromType++) {
             for (short label = 0; label < numLabels; label++) {

@@ -5,6 +5,7 @@ import ca.waterloo.dsg.graphflow.runner.ArgsFactory;
 import ca.waterloo.dsg.graphflow.storage.Graph;
 import ca.waterloo.dsg.graphflow.storage.GraphFactory;
 import ca.waterloo.dsg.graphflow.storage.KeyStore;
+import ca.waterloo.dsg.graphflow.util.IOUtils;
 import org.apache.commons.cli.Options;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -61,8 +62,16 @@ public class DatasetSerializer extends AbstractRunner {
         var outputDirectory = sanitizeDirStrAndMkdirIfNeeded(cmdLine.getOptionValue(
             ArgsFactory.SERIALIZE_OUTPUT));
         try {
+            var startTimeLoading = System.nanoTime();
             store.serialize(outputDirectory);
+            var elapsedTimeLoading = IOUtils.getElapsedTimeInMillis(startTimeLoading);
+            logger.info("Store Serialization time: " + elapsedTimeLoading + " (ms)");
+
+            startTimeLoading = System.nanoTime();
             graph.serialize(outputDirectory);
+            elapsedTimeLoading = IOUtils.getElapsedTimeInMillis(startTimeLoading);
+            logger.info("Graph Serialization time: " + elapsedTimeLoading + " (ms)");
+
         } catch (IOException e) {
             logger.error("Error in serialization: ", e.getMessage());
         }

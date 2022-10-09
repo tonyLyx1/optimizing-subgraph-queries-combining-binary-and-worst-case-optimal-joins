@@ -97,7 +97,7 @@ public class KeyStore {
             logger.error("Max number of keys inserted.");
             throw new IllegalArgumentException("Max number of keys inserted.");
         }
-        // logger.info("Inserting key '" + key + "' as " + nextKey + " in KeyStore.");
+        logger.info("Inserting key '" + key + "' as " + nextKey + " in KeyStore.");
         stringToShortKeyMap.put(key, nextKey);
         if (stringToShortKeyMap.equals(stringToShortTypeKeyMap)) {
             return nextTypeKey++;

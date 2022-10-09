@@ -8,6 +8,7 @@ import ca.waterloo.dsg.graphflow.storage.Graph;
 import ca.waterloo.dsg.graphflow.storage.GraphFactory;
 import ca.waterloo.dsg.graphflow.storage.KeyStore;
 import ca.waterloo.dsg.graphflow.storage.KeyStoreFactory;
+import ca.waterloo.dsg.graphflow.util.IOUtils;
 import org.apache.commons.cli.Options;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,13 +59,20 @@ public class CatalogSerializer extends AbstractRunner {
         }
 
         Catalog catalog = new Catalog(numSampledEdges, maxInputNumVertices);
+        logger.info("Finish building Catalog");
         try {
+            var startTimeLoading = System.nanoTime();
             catalog.populate(graph, store, numThreads, inputDirectory + "/catalog.txt");
+            var elapsedTimeLoading = IOUtils.getElapsedTimeInMillis(startTimeLoading);
+            logger.info("Catalog Population time: " + elapsedTimeLoading + " (ms)");
         } catch (IOException e) {
             logger.error("Error logging catalog in human readable format: " + e.getMessage());
         }
         try {
+            var startTimeLoading = System.nanoTime();
             catalog.serialize(inputDirectory);
+            var elapsedTimeLoading = IOUtils.getElapsedTimeInMillis(startTimeLoading);
+            logger.info("Catalog Serialization time: " + elapsedTimeLoading + " (ms)");
         } catch (IOException e) {
             logger.error("Error in serializing the catalog: " + e.getMessage());
         }

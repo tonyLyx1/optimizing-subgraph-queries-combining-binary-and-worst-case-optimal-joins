@@ -216,33 +216,55 @@ public class Catalog {
      */
     public void populate(Graph graph, KeyStore store, int numThreads, String filename)
         throws IOException, InterruptedException {
+        Logger logger = LogManager.getLogger(Catalog.class);
+        logger.info("Start populating catalog");
         var startTime = System.nanoTime();
         isAdjListSortedByType = graph.isAdjListSortedByType();
         sampledIcost = new HashMap<>();
         sampledSelectivity = new HashMap<>();
         inSubgraphs = new ArrayList<>();
+        // 生成用于建立catalog的plan
         var plans = new CatalogPlans(graph, store, numSampledEdges, maxInputNumVertices);
+        logger.info(plans);
         var queryPlan = new Plan[numThreads];
+        logger.info("Before gettting scans");
+        // catalog建立从scan算子开始
         var scans = plans.getScans();
+        logger.info("After getting scans");
+        logger.info(scans);
         var queryGraphsToExtend = new QueryGraphSet();
+        logger.info("Populating catalog");
         for (var scan : scans) {
+            // noop算子的in subgraph与out subgraph相同
             var noop = new Noop(scan.getOutSubgraph());
+            // 将scan算子与其后的noop算子相连
             scan.setNext(noop);
             noop.setPrev(scan);
             noop.setOutQVertexToIdxMap(scan.getOutQVertexToIdxMap());
-            plans.setNextOperators(graph, noop, queryGraphsToExtend);
+//            plans.setNextOperators(graph, noop, queryGraphsToExtend);
+            logger.info(plans);
             queryPlan[0] = new Plan(scan);
+            logger.info(queryPlan);
             for (var i = 1; i < numThreads; i++) {
                 queryPlan[i] = queryPlan[0].copyCatalogPlan();
             }
             setInputSubgraphs(queryGraphsToExtend.getQueryGraphSet());
+            logger.info("Before init execution plan");
             init(graph, store, queryPlan);
+            logger.info("After execution plan initialization");
             execute(queryPlan);
+            logger.info("Plan Executed");
             logOutput(graph, queryPlan);
+            logger.info("Output logged");
         }
         addZeroSelectivities(graph, plans);
         elapsedTime = IOUtils.getElapsedTimeInMillis(startTime);
-        log(filename, numThreads, graph, store.getNextTypeKey(), store.getNextLabelKey());
+        logger.info("Start logging catalog");
+        try {
+            log(filename, numThreads, graph, store.getNextTypeKey(), store.getNextLabelKey());
+        } catch(IOException e) {
+            logger.error("Error occurs when logging catalog");
+        }
     }
 
     private void init(Graph graph, KeyStore store, Plan[] queryPlanArr) {
@@ -513,6 +535,7 @@ public class Catalog {
 
     private void log(String filename, int numThreads, Graph graph, int numTypes, int numLabels)
         throws IOException {
+        // 创建catalog-txt文件
         IOUtils.createNewFile(filename);
         var writer = new BufferedWriter(new FileWriter(filename));
         var header = "i-cost & selectivity of ALDs";

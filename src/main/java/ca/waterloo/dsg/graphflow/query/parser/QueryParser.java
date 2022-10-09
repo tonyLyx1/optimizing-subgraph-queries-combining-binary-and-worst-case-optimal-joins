@@ -44,7 +44,9 @@ public class QueryParser {
         lexer.removeErrorListeners();   // Remove default listeners first.
         lexer.addErrorListener(AntlrErrorListener.INSTANCE);
 
+        logger.info(lexer);
         var parser = new GraphflowParser(new CommonTokenStream(lexer));
+        logger.info(parser);
         parser.removeErrorListeners();   // Remove default listeners first.
         parser.addErrorListener(AntlrErrorListener.INSTANCE);
 

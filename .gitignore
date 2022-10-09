@@ -15,3 +15,5 @@ scripts/*/
 scripts/*.data
 *.data
 .vscode
+bin/
+bin/*
